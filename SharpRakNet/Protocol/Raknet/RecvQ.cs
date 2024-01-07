@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 
@@ -8,10 +7,10 @@ namespace SharpRakNet.Protocol.Raknet
     public class RecvQ
     {
         private uint sequenced_frame_index;
-        private uint last_ordered_index;
+        private uint[] last_ordered_index = new uint[0xFF];
         private ACKSet sequence_number_ackset;
         private Dictionary<uint, FrameSetPacket> packets;
-        private Dictionary<uint, FrameSetPacket> ordered_packets;
+        private Dictionary<uint, FrameSetPacket>[] ordered_packets = new Dictionary<uint, FrameSetPacket>[0xFF];
         private FragmentQ fragment_queue;
 
         private readonly object packetsLock = new object();
@@ -23,10 +22,12 @@ namespace SharpRakNet.Protocol.Raknet
         {
             sequence_number_ackset = new ACKSet();
             packets = new Dictionary<uint, FrameSetPacket>();
-            ordered_packets = new Dictionary<uint, FrameSetPacket>();
+
+            for (var i = 0; i < 0xFF; ++i)
+                ordered_packets[i] = new Dictionary<uint, FrameSetPacket>();
+
             fragment_queue = new FragmentQ();
             sequenced_frame_index = 0;
-            last_ordered_index = 0;
         }
 
         public void Insert(FrameSetPacket frame)
@@ -67,7 +68,7 @@ namespace SharpRakNet.Protocol.Raknet
                         packets[frame.sequence_number] = frame;
                     break;
                 case Reliability.ReliableOrdered:
-                    if (frame.ordered_frame_index < last_ordered_index)
+                    if (frame.ordered_frame_index < last_ordered_index[frame.order_channel])
                     {
                         return;
                     }
@@ -80,13 +81,13 @@ namespace SharpRakNet.Protocol.Raknet
                         foreach (FrameSetPacket i in fragment_queue.Flush())
                         {
                             lock (orderedPacketsLock)
-                                ordered_packets[i.ordered_frame_index] = i;
+                                ordered_packets[i.order_channel][i.ordered_frame_index] = i;
                         }
                     }
                     else
                     {
                         lock (orderedPacketsLock)
-                            ordered_packets[frame.ordered_frame_index] = frame;
+                            ordered_packets[frame.order_channel][frame.ordered_frame_index] = frame;
                     }
                     break;
                 case Reliability.ReliableSequenced:
@@ -121,16 +122,22 @@ namespace SharpRakNet.Protocol.Raknet
             List<FrameSetPacket> ret = new List<FrameSetPacket>();
             lock (orderedPacketsLock)
             {
-                List<uint> orderedKeys = ordered_packets.Keys.ToList();
-                orderedKeys.Sort();
-                foreach (uint i in orderedKeys)
+                for (var channel = 0; channel < 0xFF; ++channel)
                 {
-                    if (i == last_ordered_index)
+                    if (ordered_packets[channel].Count == 0)
+                        continue;
+
+                    List<uint> orderedKeys = ordered_packets[channel].Keys.ToList();
+                    orderedKeys.Sort();
+                    foreach (uint i in orderedKeys)
                     {
-                        FrameSetPacket frame = ordered_packets[i];
-                        ret.Add(frame);
-                        ordered_packets.Remove(i);
-                        last_ordered_index = i + 1;
+                        if (i == last_ordered_index[channel])
+                        {
+                            FrameSetPacket frame = ordered_packets[channel][i];
+                            ret.Add(frame);
+                            ordered_packets[channel].Remove(i);
+                            last_ordered_index[channel] = i + 1;
+                        }
                     }
                 }
             }
@@ -152,22 +159,10 @@ namespace SharpRakNet.Protocol.Raknet
             return ret;
         }
 
-        public int GetOrderedPacketCount()
-        {
-            lock (orderedPacketsLock)
-                return ordered_packets.Count;
-        }
-
         public int GetFragmentQueueSize()
         {
             lock (fragmentQueueLock)
                 return fragment_queue.Size();
-        }
-
-        public List<uint> GetOrderedKeys()
-        {
-            lock (orderedPacketsLock)
-                return ordered_packets.Keys.ToList();
         }
 
         public int GetSize()

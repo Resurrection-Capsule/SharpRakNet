@@ -12,6 +12,7 @@ namespace SharpRakNet.Network
     {
         public delegate void SessionConnectedDelegate(RaknetSession session);
         public SessionConnectedDelegate SessionConnected = delegate { };
+        public SessionConnectedDelegate SessionDisconnected = delegate { };
         public AsyncUdpClient Socket;
 
         private static readonly Dictionary<int, List<(Type, Delegate)>> Listeners = new Dictionary<int, List<(Type, Delegate)>>();
@@ -63,16 +64,16 @@ namespace SharpRakNet.Network
 
         private void OnSessionEstablished(RaknetSession session)
         {
-            session.SessionReceiveRaw += OnPacketReceived;
             session.SessionDisconnected += RemoveSession;
         }
 
         void RemoveSession(RaknetSession session)
         {
-            session.SessionReceiveRaw -= OnPacketReceived;
             IPEndPoint peerAddr = session.PeerEndPoint;
 
-            lock(Sessions)
+            SessionDisconnected(session);
+
+            lock (Sessions)
                 Sessions.Remove(peerAddr);
         }
 

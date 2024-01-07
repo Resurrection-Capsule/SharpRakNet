@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Net.Sockets;
 using System.Net;
-using SharpRakNet.Protocol;
-using System.Threading;
+
 using SharpRakNet.Protocol.Raknet;
 
 namespace SharpRakNet.Network
@@ -74,13 +72,6 @@ namespace SharpRakNet.Network
         public void Send(IPEndPoint peer_addr, byte[] packet)
         {
             Socket.Send(peer_addr, packet);
-        }
-
-        public void Subscribe<T>(Action<T> action) where T : Packet
-        {
-            if(Session == null) throw new Exception("Session not yet connected, cannot subscribe before a session is established...");
-
-            Session.Subscribe(action);
         }
 
         public void BeginConnection(IPEndPoint address)
