@@ -30,8 +30,8 @@ namespace SharpRakNet.Network
         public delegate void SessionDisconnectedDelegate(RaknetSession session);
         public SessionDisconnectedDelegate SessionDisconnected = delegate { };
 
-        public delegate void PacketReceiveBytesDelegate(IPEndPoint address, byte[] bytes);
-        public PacketReceiveBytesDelegate SessionReceiveRaw = delegate { };
+        public delegate bool PacketReceiveBytesDelegate(RaknetSession session, byte[] bytes);
+        public PacketReceiveBytesDelegate SessionReceiveRaw = delegate { return false; };
         public SessionDisconnectedDelegate SessionOnNewIncomingConnection = delegate { };
 
         public RaknetSession(AsyncUdpClient Socket, IPEndPoint Address, ulong guid, byte rakVersion, RecvQ recvQ, SendQ sendQ, bool thrownUnkownPackets = false)
@@ -203,7 +203,9 @@ namespace SharpRakNet.Network
                     HandleDisconnectionNotification();
                     break;
                 default:
-                    SessionReceiveRaw(address, frame.data);
+                    if (SessionReceiveRaw(this, frame.data))
+                        break;
+
                     if (!HandleIncomingPacket(frame.data));
                     {
                         Console.WriteLine($"RaknetSession: unhandled packet: 0x{packetID:X} ({BitConverter.ToString(frame.data).Replace('-', ' ')})");
