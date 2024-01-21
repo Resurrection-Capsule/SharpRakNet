@@ -288,6 +288,11 @@ namespace SharpRakNet.Network
 
         private void HandleDisconnectionNotification()
         {
+            Disconnect();
+        }
+
+        public void Disconnect()
+        {
             Connected = false;
             SenderThread.Join();
             PingTimer.Dispose();
