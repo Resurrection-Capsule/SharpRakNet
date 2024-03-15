@@ -26,7 +26,7 @@ namespace SharpRakNet.Network
             Socket = new AsyncUdpClient(address);
             Socket.PacketReceived += OnPacketReceived;
             SessionConnected += OnSessionEstablished;
-            guid = (ulong)new Random().NextDouble() * ulong.MaxValue;
+            guid = (ulong)(new Random().NextDouble() * ulong.MaxValue);
         }
 
         public void Subscribe<T>(Action<IPEndPoint, T> action) where T : Packet
