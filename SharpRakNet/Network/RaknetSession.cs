@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Threading;
@@ -56,7 +57,7 @@ namespace SharpRakNet.Network
 
             //Ensure the packet has a registered packet id.
             RegisterPacketID attribute = 
-                packetType.GetCustomAttribute<RegisterPacketID>() ?? throw new Exception(packetType.FullName + " must have the [RegisterPacketID(int)] attribute.");
+                packetType.GetCustomAttributes(false).OfType<RegisterPacketID>().FirstOrDefault() ?? throw new Exception(packetType.FullName + " must have the [RegisterPacketID(int)] attribute.");
 
             bool hasBufferConstructor = false;
             foreach(ConstructorInfo constructor in packetType.GetConstructors())

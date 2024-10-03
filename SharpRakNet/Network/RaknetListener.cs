@@ -35,7 +35,7 @@ namespace SharpRakNet.Network
 
             //Ensure the packet has a registered packet id.
             RegisterPacketID attribute =
-                packetType.GetCustomAttribute<RegisterPacketID>() ?? throw new Exception(packetType.FullName + " must have the RegisterPacketID attribute.");
+                packetType.GetCustomAttributes(false).OfType<RegisterPacketID>().FirstOrDefault() ?? throw new Exception(packetType.FullName + " must have the RegisterPacketID attribute.");
 
             bool hasBufferConstructor = false;
             foreach (ConstructorInfo constructor in packetType.GetConstructors())
