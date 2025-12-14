@@ -15,7 +15,6 @@ namespace SharpRakNet.Protocol.Raknet {
         }
 
         public abstract byte[] Serialize();
-
         public abstract void Deserialize();
 
         public static byte[] WritePacketPing(PacketUnconnectedPing packet)
@@ -240,7 +239,7 @@ namespace SharpRakNet.Protocol.Raknet {
             return new ConnectionRequest
             {
                 guid = cursor.ReadU64(Endian.Big),
-                time = cursor.ReadI64(Endian.Big),
+                time = cursor.ReadU32(Endian.Big),
                 use_encryption = cursor.ReadU8(),
             };
         }
@@ -250,7 +249,7 @@ namespace SharpRakNet.Protocol.Raknet {
             RaknetWriter cursor = new RaknetWriter();
             cursor.WriteU8(PacketID.ConnectionRequest);
             cursor.WriteU64(packet.guid, Endian.Big);
-            cursor.WriteI64(packet.time, Endian.Big);
+            cursor.WriteU32(packet.time, Endian.Big);
             cursor.WriteU8(packet.use_encryption);
             return cursor.GetRawPayload();
         }
@@ -274,14 +273,15 @@ namespace SharpRakNet.Protocol.Raknet {
             cursor.WriteU8(PacketID.ConnectionRequestAccepted);
             cursor.WriteAddress(packet.client_address);
             cursor.WriteU16(packet.system_index, Endian.Big);
+            
+            IPEndPoint dummyAddress = new IPEndPoint(IPAddress.Parse("255.255.255.255"), 65535);
             for (int i = 0; i < 10; i++)
             {
-                IPEndPoint tmpEndpoint = new IPEndPoint(IPAddress.Parse("255.255.255.255"), 19132);
-                cursor.WriteAddress(tmpEndpoint);
+                cursor.WriteAddress(dummyAddress);
             }
 
-            cursor.WriteI64(packet.request_timestamp, Endian.Big);
-            cursor.WriteI64(packet.request_timestamp, Endian.Big);
+            cursor.WriteU32(packet.request_timestamp, Endian.Big);
+            cursor.WriteU32(packet.accepted_timestamp, Endian.Big);
 
             return cursor.GetRawPayload();
         }
@@ -298,8 +298,8 @@ namespace SharpRakNet.Protocol.Raknet {
             {
                 cursor.ReadAddress();
             }
-            packet.request_timestamp = cursor.ReadI64(Endian.Big);
-            packet.accepted_timestamp = cursor.ReadI64(Endian.Big);
+            packet.request_timestamp = cursor.ReadU32(Endian.Big);
+            packet.accepted_timestamp = cursor.ReadU32(Endian.Big);
             return packet;
         }
 
@@ -313,8 +313,8 @@ namespace SharpRakNet.Protocol.Raknet {
             {
                 cursor.WriteAddress(tmpAddress);
             }
-            cursor.WriteI64(packet.request_timestamp, Endian.Big);
-            cursor.WriteI64(packet.accepted_timestamp, Endian.Big);
+            cursor.WriteU32(packet.request_timestamp, Endian.Big);
+            cursor.WriteU32(packet.accepted_timestamp, Endian.Big);
             return cursor.GetRawPayload();
         }
 
@@ -324,7 +324,7 @@ namespace SharpRakNet.Protocol.Raknet {
             cursor.ReadU8();
             return new ConnectedPing
             {
-                client_timestamp = cursor.ReadI64(Endian.Big),
+                client_timestamp = cursor.ReadU32(Endian.Big),
             };
         }
 
@@ -332,7 +332,7 @@ namespace SharpRakNet.Protocol.Raknet {
         {
             RaknetWriter cursor = new RaknetWriter();
             cursor.WriteU8(PacketID.ConnectedPing);
-            cursor.WriteI64(packet.client_timestamp, Endian.Big);
+            cursor.WriteU32(packet.client_timestamp, Endian.Big);
             return cursor.GetRawPayload();
         }
 
@@ -342,8 +342,8 @@ namespace SharpRakNet.Protocol.Raknet {
             cursor.ReadU8();
             return new ConnectedPong
             {
-                client_timestamp = cursor.ReadI64(Endian.Big),
-                server_timestamp = cursor.ReadI64(Endian.Big),
+                client_timestamp = cursor.ReadU32(Endian.Big),
+                server_timestamp = cursor.ReadU32(Endian.Big),
             };
         }
 
@@ -351,8 +351,8 @@ namespace SharpRakNet.Protocol.Raknet {
         {
             RaknetWriter cursor = new RaknetWriter();
             cursor.WriteU8(PacketID.ConnectedPong);
-            cursor.WriteI64(packet.client_timestamp, Endian.Big);
-            cursor.WriteI64(packet.server_timestamp, Endian.Big);
+            cursor.WriteU32(packet.client_timestamp, Endian.Big);
+            cursor.WriteU32(packet.server_timestamp, Endian.Big);
             return cursor.GetRawPayload();
         }
     }
@@ -383,7 +383,7 @@ namespace SharpRakNet.Protocol.Raknet {
 
     public class ConnectedPing
     {
-        public long client_timestamp { get; set; }
+        public uint client_timestamp { get; set; }
     }
 
     public class PacketUnconnectedPing
@@ -403,8 +403,8 @@ namespace SharpRakNet.Protocol.Raknet {
 
     public class ConnectedPong
     {
-        public long client_timestamp { get; set; }
-        public long server_timestamp { get; set; }
+        public uint client_timestamp { get; set; }
+        public uint server_timestamp { get; set; }
     }
 
     public class OpenConnectionRequest1
@@ -442,7 +442,7 @@ namespace SharpRakNet.Protocol.Raknet {
     public class ConnectionRequest
     {
         public ulong guid { get; set; }
-        public long time { get; set; }
+        public uint time { get; set; }
         public byte use_encryption { get; set; }
     }
 
@@ -450,15 +450,15 @@ namespace SharpRakNet.Protocol.Raknet {
     {
         public IPEndPoint client_address { get; set; }
         public ushort system_index { get; set; }
-        public long request_timestamp { get; set; }
-        public long accepted_timestamp { get; set; }
+        public uint request_timestamp { get; set; }
+        public uint accepted_timestamp { get; set; }
     }
 
     public class NewIncomingConnection
     {
         public IPEndPoint server_address { get; set; }
-        public long request_timestamp { get; set; }
-        public long accepted_timestamp { get; set; }
+        public uint request_timestamp { get; set; }
+        public uint accepted_timestamp { get; set; }
     }
 
     public class IncompatibleProtocolVersion

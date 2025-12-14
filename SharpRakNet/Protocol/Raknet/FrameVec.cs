@@ -19,6 +19,8 @@ namespace SharpRakNet.Protocol.Raknet
             RaknetReader reader = new RaknetReader(buf);
 
             id = reader.ReadU8();
+
+            uint timestamp = reader.ReadU32(Endian.Big); 
             sequence_number = reader.ReadU24(Endian.Little);
 
             while ((int)reader.Position < size)
@@ -61,9 +63,13 @@ namespace SharpRakNet.Protocol.Raknet
         public byte[] Serialize()
         {
             RaknetWriter writer = new RaknetWriter();
-            byte id = (byte)(0x80 | 0x04 | 0x08);
+            
+            byte id = (byte)(0x80 | 0x04); 
 
             writer.WriteU8(id);
+
+            writer.WriteU32((uint)Common.CurTimestampMillis(), Endian.Big);
+
             writer.WriteU24(sequence_number, Endian.Little);
 
             foreach (FrameSetPacket frame in frames)
@@ -86,7 +92,7 @@ namespace SharpRakNet.Protocol.Raknet
                     writer.WriteU8(frame.order_channel);
                 }
 
-                if ((frame.flags & 0x08) != 0)
+                if ((frame.flags & 0x10) != 0) 
                 {
                     writer.WriteU32(frame.compound_size, Endian.Big);
                     writer.WriteU16(frame.compound_id, Endian.Big);

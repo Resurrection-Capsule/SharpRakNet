@@ -157,22 +157,22 @@ namespace SharpRakNet
         {
             if (address.AddressFamily == AddressFamily.InterNetwork)
             {
-                WriteU8(0x4);
-                byte[] ipBytes = address.Address.GetAddressBytes();
+                WriteU8(0x04); // 1 byte: IPv4 indicator
+                
+                byte[] ipBytes = address.Address.GetAddressBytes(); // 4 bytes
                 for (int i = 0; i < ipBytes.Length; i++)
                 {
-                    WriteU8((byte)(0xFF - ipBytes[i]));
+                    WriteU8((byte)(0xFF - ipBytes[i])); // Complemento de 1
                 }
-                WriteU16((ushort)address.Port, Endian.Big);
+                
+                WriteU16((ushort)address.Port, Endian.Big); // 2 bytes: porta
+                
+                // Total: 1 + 4 + 2 = 7 bytes
             }
             else
             {
-                WriteI16(23, Endian.Little);
-                WriteU16((ushort)address.Port, Endian.Big);
-                WriteI32(0, Endian.Big);
-                byte[] ipBytes = address.Address.GetAddressBytes();
-                Write(ipBytes);
-                WriteI32(0, Endian.Big);
+                // IPv6 (não usado aqui)
+                throw new NotImplementedException("IPv6 not supported");
             }
         }
 

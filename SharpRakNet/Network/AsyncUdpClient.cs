@@ -49,6 +49,9 @@ namespace SharpRakNet.Network
 
                 Socket = (UdpClient)ar.AsyncState;
                 byte[] receivedData = Socket.EndReceive(ar, ref source);
+
+                Console.WriteLine($"[UDP] Received {receivedData.Length} bytes from {source}");
+
                 Socket.BeginReceive(recv, Socket);
 
                 PacketReceived(source, receivedData);

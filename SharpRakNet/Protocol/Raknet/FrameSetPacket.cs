@@ -57,6 +57,11 @@ namespace SharpRakNet.Protocol.Raknet
         {
             RaknetReader reader = new RaknetReader(buf);
 
+            // Nota: Este Deserialize é para pacotes unitários? 
+            // O FrameVec.cs é quem geralmente processa a entrada do RakNet 3 com o Timestamp.
+            // Se este método for usado em algum lugar para entrada crua, precisaria ajustar também.
+            // Mas para o envio (Serialize), o ajuste abaixo é crucial.
+
             FrameSetPacket ret = new FrameSetPacket
             {
                 id = reader.ReadU8(),
@@ -96,15 +101,17 @@ namespace SharpRakNet.Protocol.Raknet
         public byte[] Serialize()
         {
             RaknetWriter writer = new RaknetWriter();
+            // byte id = (byte)(0x80 | NEEDS_B_AND_AS_FLAG);
 
-            byte id = (byte)(0x80 | NEEDS_B_AND_AS_FLAG);
-
-            if ((flags & 16) != 0 && fragment_index != 0)
-            {
-                id |= NEEDS_B_AND_AS_FLAG;
-            }
+            // if ((flags & 16) != 0 && fragment_index != 0)
+            // {
+            //     id |= NEEDS_B_AND_AS_FLAG;
+            // }
+            byte id = 0xC4;
 
             writer.WriteU8(id);
+            writer.WriteU32((uint)Common.CurTimestampMillis(), Endian.Big);
+
             writer.WriteU24(sequence_number, Endian.Little);
             writer.WriteU8(flags);
             writer.WriteU16((ushort)(length_in_bytes * 8), Endian.Big);
@@ -124,7 +131,7 @@ namespace SharpRakNet.Protocol.Raknet
                 writer.WriteU8(order_channel);
             }
 
-            if ((flags & 16) != 0)
+            if ((flags & 0x10) != 0)
             {
                 writer.WriteU32(compound_size, Endian.Big);
                 writer.WriteU16(compound_id, Endian.Big);
@@ -167,6 +174,7 @@ namespace SharpRakNet.Protocol.Raknet
         {
             int ret = 0;
             ret += 1; // id
+            ret += 4; // timestamp (RakNet 3)
             ret += 3; // sequence number
             ret += 1; // flags
             ret += 2; // length_in_bits
